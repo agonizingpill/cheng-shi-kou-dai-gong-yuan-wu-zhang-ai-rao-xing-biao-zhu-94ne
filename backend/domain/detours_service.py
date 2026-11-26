@@ -3,6 +3,7 @@ from sqlalchemy import select
 from core.queueing import submit, result
 from core.records import get, insert, need, scan, update
 from domain.entrances_model import entrances
+from domain.tag_aliases_service import stale_message
 from domain.walk_profiles_model import walk_profiles
 from domain.detours_model import detours
 from domain.map_notes_model import map_notes
@@ -10,6 +11,8 @@ from domain.map_notes_model import map_notes
 
 def submit_detour(conn, user, data):
     run = result(user, data.token)
+    stale = stale_message(conn, run['input'])
+    need(stale is None, stale)
     profile = run['input']['profile']
     entrance = get(conn, entrances, data.entrance, lock=True)
     candidate = next((item for item in run['result']['ranked'] if item['entry']==data.entrance),None)

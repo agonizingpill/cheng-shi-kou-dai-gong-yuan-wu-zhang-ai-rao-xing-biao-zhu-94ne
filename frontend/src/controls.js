@@ -24,25 +24,33 @@ function parse(form, fields) {
 }
 export function actionForm(action, refresh) {
   const notice = status('');
+  const outcome = el('div', {class:'outcome'});
   const button = el('button', {type:'submit'}, action.label);
   const form = el('form', {class:'action', id:action.name},
     el('h3',{},action.label), el('p',{},action.help),
     el('div',{class:'fields'},action.fields.map(field => el('label',{},
       el('span',{},field.label), input(field)))),
-    button, notice);
+    button, notice, outcome);
   form.addEventListener('submit',async event => {
     event.preventDefault();
     button.disabled = true;
     notice.className = 'status';
+    outcome.replaceChildren();
     try {
       const data = await request(action.path, parse(form, action.fields));
       if (data.token && data.status === 'queued') {
         evidence.save(data.token);
         const result = await awaitCompute(data.token, current => {
-          notice.textContent = COMPUTE_STATES[current.status] || current.status;
+          notice.textContent = current.stale || COMPUTE_STATES[current.status] || current.status;
         });
         if (result.status === 'rejected') throw new Error(result.detail);
-        notice.textContent = '任务 ' + data.token + ' · ' + display(result.result);
+        if (result.stale) throw new Error(result.stale);
+        if (action.present) {
+          notice.textContent = '任务 ' + data.token + ' 已计算';
+          outcome.replaceChildren(action.present(result.result));
+        } else {
+          notice.textContent = '任务 ' + data.token + ' · ' + display(result.result);
+        }
       } else {
         notice.textContent = action.success + ' · ' + display(data.code ?? data.status);
       }

@@ -15,6 +15,7 @@ FIXTURES = [
   'ramp': True,
   'tags': ['石阶', '碎石'],
   'condition': '现场见证'},
+ {'code': 'PK-E4', 'park': '柳瓦园', 'ramp': True, 'tags': ['碎石路面'], 'condition': '现场见证'},
  {'code': 'PK-W1', 'park': '银叶园', 'ramp': True, 'tags': ['木栈道'], 'condition': '暂闭'}]),
     (walk_profiles, [{'code': 'PR-10',
   'park': '柳瓦园',

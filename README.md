@@ -8,6 +8,7 @@
 
 - 入口设施核验 `entrances`，字段为 `park`（口袋公园）、`ramp`（坡道通行）、`tags`（障碍标记）、`condition`（核验状态）。模型约束位于 `backend/domain/entrances_model.py`，规则位于 `entrances_service.py`。
 - 绕行偏好卡 `walk_profiles`，字段为 `park`（公园）、`avoid`（需避开标记）、`weights`（标记权重）、`minimum`（最低匹配分）。模型约束位于 `backend/domain/walk_profiles_model.py`，规则位于 `walk_profiles_service.py`。
+- 同义标记合并 `tag_aliases`，字段为 `alias`（旧称）、`canonical`（新叫法）、`serial`（规则序号）。模型约束位于 `backend/domain/tag_aliases_model.py`，规则位于 `tag_aliases_service.py`。
 - 绕行线路单 `detours`，字段为 `profile`（偏好卡）、`entrance`（终点入口）、`walk_m`（绕行距离 m）、`score`（匹配分）、`state`（状态）。模型约束位于 `backend/domain/detours_model.py`，规则位于 `detours_service.py`。
 - 导视图签注 `map_notes`，字段为 `detour`（线路单）、`legend`（导视文本）、`edition`（图纸版本）。模型约束位于 `backend/domain/map_notes_model.py`，规则位于 `map_notes_service.py`。
 
@@ -53,10 +54,13 @@ Compose 运行 Nginx、Python FastAPI、独立 Redis 消费进程、SQL 数据�
 |---|---|---|
 | 入口设施核验 | `/entrances` /entrances/inspect | `frontend/src/pages/entrances.js` |
 | 绕行偏好卡 | `/walk_profiles` /walk_profiles/draft-profile，/walk_profiles/match-entrances | `frontend/src/pages/walk_profiles.js` |
+| 同义标记合并 | `/tag_aliases` /tag_aliases/merge-tags | `frontend/src/pages/tag_aliases.js` |
 | 绕行线路单 | `/detours` /detours/submit-detour，/detours/withdraw-detour | `frontend/src/pages/detours.js` |
 | 导视图签注 | `/map_notes` /map_notes/publish-map | `frontend/src/pages/map_notes.js` |
 
 SQL 实体与约束在 `backend/domain` 下维护。前端使用原生 ES modules。核心算子为 MultiLabelBinarizer + 加权距离。标记以 MultiLabelBinarizer 编为 0/1，匹配分为 1-实际冲突权重/偏好总权重。结果按分值和坡道通行排序。
+
+复核员合并同义叫法（如“碎石”与“碎石路面”）后，入口与偏好卡一次性切换为新叫法，登记时旧称仍照常受理。算分先归一化：入口重复报同一障碍只扣一次，偏好卡两项都有时取较重权重。规则更新会作废受影响的旧匹配分，重算完成后才能交线路单，晚到的旧计算结果不会盖过新分；已交的线路单保留原分，偏好卡页可查看新分扣了哪几项。
 
 地点和步测均为演示数据。图签供维护员复制到外部制图工具。
 

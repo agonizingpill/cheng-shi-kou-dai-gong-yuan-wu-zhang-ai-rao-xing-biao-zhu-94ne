@@ -10,6 +10,7 @@ from core.config import SEED_DEMO
 from core.middleware import install
 from core.queueing import broker, view
 from domain.routes import routers
+from domain.tag_aliases_service import stale_message
 from scripts.seed_demo import seed
 
 @asynccontextmanager
@@ -37,4 +38,10 @@ def health():
 
 @app.get('/compute/{token}')
 def compute(token: str, user=Depends(auth.actor)):
-    return view(user, token)
+    data = view(user, token)
+    if data.get('status') == 'ready':
+        with transaction() as conn:
+            notice = stale_message(conn, data.get('input') or {})
+        if notice:
+            data['stale'] = notice
+    return data

@@ -1,11 +1,23 @@
         import {workspace} from '../workspace.js';
         import {el} from '../dom.js';
 
+        const rankedView = result => el('div', {class:'scroll'},
+          el('table', {},
+            el('thead', {}, el('tr', {}, ['候选入口','匹配分','坡道通行','扣分项'].map(h => el('th',{scope:'col'},h)))),
+            el('tbody', {}, (result.ranked || []).map(item =>
+              el('tr', {},
+                el('td', {}, item.entry),
+                el('td', {}, String(item.score)),
+                el('td', {}, item.ramp ? '是' : '否'),
+                el('td', {}, (item.deductions || []).length
+                  ? item.deductions.map(d => d.item + ' 扣 ' + d.weight).join('；')
+                  : '无扣分'))))));
+
         const page = {
   "title": "无障碍障碍组合",
   "module": "绕行偏好卡",
   "caption": "绕行偏好卡",
-  "detail": "声明应避开的设施标记与优先级。多标签二值编码允许同一入口同时具有临时标线和碎石等特征。",
+  "detail": "声明应避开的设施标记与优先级。同义叫法合并后按新叫法计分，同一障碍只扣一次，重复项取较重权重。",
   "path": "/walk_profiles",
   "columns": [
     {
@@ -93,12 +105,13 @@
           "initial": "PR-11"
         }
       ],
-      "help": "按障碍权重从高到低列出候选入口。",
+      "help": "按障碍权重从高到低列出候选入口，并列出新分扣了哪几项。",
       "roles": [
         "operator",
         "reviewer"
       ],
-      "success": "已写入"
+      "success": "已写入",
+      "present": rankedView
     }
   ]
 };

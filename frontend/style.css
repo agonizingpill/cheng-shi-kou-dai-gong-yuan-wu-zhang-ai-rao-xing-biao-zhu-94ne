@@ -54,6 +54,8 @@ label { display:block; min-width:0 }
 label span { display:block; color:var(--soft); font-size:.875em }
 .status { margin:.5rem 0 0; overflow-wrap:anywhere; white-space:normal }
 .status:empty { display:none }
+.outcome { margin-block-start:.8rem }
+.outcome:empty { display:none }
 .status.ok,.status.error { border-inline-start:3px solid currentColor; padding-inline-start:.65rem }
 .status.ok { color:oklch(42% .11 150) }
 .status.error { color:oklch(45% .17 28) }

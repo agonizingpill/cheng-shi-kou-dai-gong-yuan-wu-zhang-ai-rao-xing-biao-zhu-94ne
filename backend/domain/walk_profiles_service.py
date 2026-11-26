@@ -2,7 +2,10 @@ from sqlalchemy import select
 
 from core.queueing import submit, result
 from core.records import get, insert, need, scan, update
+from domain import tag_aliases as aliases
 from domain.entrances_model import entrances
+from domain.tag_aliases_model import tag_aliases
+from domain.tag_aliases_service import current_serial
 from domain.walk_profiles_model import walk_profiles
 from domain.detours_model import detours
 from domain.map_notes_model import map_notes
@@ -16,7 +19,10 @@ def draft_profile(conn, user, data):
          '每条应规避标记须有 0 至 5 的权重')
     need(0 <= data.minimum <= 1, '匹配分门槛必须在 0 到 1')
     need(any(row['park'] == data.park for row in scan(conn, entrances)), '公园尚未登记入口')
-    return insert(conn, walk_profiles, **data.model_dump())
+    mapping = aliases.alias_map(scan(conn, tag_aliases))
+    avoid, weights = aliases.normalize_profile(data.avoid, data.weights, mapping)
+    return insert(conn, walk_profiles, code=data.code, park=data.park, avoid=avoid,
+                  weights=weights, minimum=data.minimum)
 
 
 def match_entrances(conn, user, data):
@@ -24,4 +30,6 @@ def match_entrances(conn, user, data):
     observed = [row for row in scan(conn, entrances) if row['park'] == profile['park']
                 and row['condition'] == '现场见证']
     need(observed, '没有见证过的入口')
-    return submit(user, {'profile':profile,'entrances':observed})
+    return submit(user, {'profile': profile, 'entrances': observed,
+                         'aliases': aliases.alias_map(scan(conn, tag_aliases)),
+                         'rule_serial': current_serial(conn)})
